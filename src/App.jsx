@@ -1,12 +1,42 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+
+// Función centralizada para manejar los logs del sistema
+const registrarLog = (accion, nivel = 'info', datos = null) => {
+  const fecha = new Date().toLocaleString();
+  const mensaje = `[${fecha}] ${accion}`;
+
+  if (nivel === 'error') {
+    console.error(`❌ ERROR: ${mensaje}`, datos ? datos : '');
+  } else if (nivel === 'success') {
+    console.log(`✅ ÉXITO: ${mensaje}`, datos ? datos : '');
+  } else {
+    console.info(`ℹ️ INFO: ${mensaje}`, datos ? datos : '');
+  }
+};
 
 function App() {
   const [usuario, setUsuario] = useState({ nombre: "", edad: "", correo: "", cedula: "" });
-  const [listaUsuarios, setListaUsuarios] = useState([]);
   const [indiceEditar, setIndiceEditar] = useState(null);
 
+  // 1. Cargar datos del localStorage al iniciar la app
+  const [listaUsuarios, setListaUsuarios] = useState(() => {
+    const contactosGuardados = localStorage.getItem("misContactos");
+    if (contactosGuardados) {
+      registrarLog("Contactos cargados desde la memoria local", "info");
+      return JSON.parse(contactosGuardados);
+    } else {
+      registrarLog("Se inició la app con la lista de contactos vacía", "info");
+      return [];
+    }
+  });
+
+  // 2. Guardar automáticamente en localStorage cada vez que la lista cambie
+  useEffect(() => {
+    localStorage.setItem("misContactos", JSON.stringify(listaUsuarios));
+  }, [listaUsuarios]);
+
   const iniciarEdicion = (indice) => {
-    console.info(`📝 Iniciando edición del contacto en el índice: ${indice}`);
+    registrarLog(`Iniciando edición del contacto #${indice + 1}`, "info", listaUsuarios[indice]);
     setUsuario(listaUsuarios[indice]);
     setIndiceEditar(indice);
   };
@@ -20,24 +50,28 @@ function App() {
         nuevaLista[indiceEditar] = usuario;
         setListaUsuarios(nuevaLista);
         setIndiceEditar(null);
-        console.log("✅ Usuario editado exitosamente:", usuario);
+        
+        registrarLog("Usuario editado correctamente", "success", usuario);
         alert("Usuario editado exitosamente");
       } else {
         setListaUsuarios([...listaUsuarios, usuario]);
-        console.log("✅ Nuevo usuario agregado:", usuario);
+        
+        registrarLog("Nuevo usuario agregado", "success", usuario);
         alert("Usuario agregado exitosamente");
       }
 
       setUsuario({ nombre: "", edad: "", correo: "", cedula: "" });
     } else {
-      console.error("❌ Error al guardar: Se intentó agregar/editar un usuario con campos incompletos.");
+      registrarLog("Intento fallido de guardar: Se dejaron campos en blanco", "error");
       alert("Debes completar todos los campos");
     }
   };
 
   const eliminarUsuario = (indice) => {
-    console.log(`🗑️ Eliminando usuario:`, listaUsuarios[indice]);
-    const nuevaLista = listaUsuarios.filter((usuario, i) => i !== indice);
+    const contactoEliminado = listaUsuarios[indice];
+    registrarLog(`Eliminando contacto #${indice + 1}`, "info", contactoEliminado);
+    
+    const nuevaLista = listaUsuarios.filter((_, i) => i !== indice);
     setListaUsuarios(nuevaLista);
   };
 
@@ -61,13 +95,13 @@ function App() {
             <div className="mt-4 flex gap-2">
               <button
                 onClick={() => iniciarEdicion(indice)}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded"
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded cursor-pointer"
               >
                 Editar
               </button>
               <button
                 onClick={() => eliminarUsuario(indice)}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded"
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded cursor-pointer"
               >
                 Eliminar
               </button>
@@ -84,11 +118,12 @@ function App() {
         <h1 className="text-2xl font-bold">Tus contactos</h1>
         {mostrarUsuarios()}
       </section>
+      
       <section className='w-1/2 flex flex-col items-center border-l-2 border-white'>
         <div className='mt-20'>
           <h1 className='text-2xl font-bold'>Agregar contacto</h1>
           <form action="">
-            <fieldset className="border border-gray-300 p-6 rounded-xl mt-10 shadow-sm max-w-md w-full mx-auto">
+            <fieldset className="border border-zinc-700 p-6 rounded-xl mt-10 shadow-sm max-w-md w-full mx-auto">
               <legend className="text-lg font-bold text-white px-2">Datos del contacto</legend>
 
               <div className="flex flex-col gap-4 mt-4">
@@ -99,7 +134,7 @@ function App() {
                     placeholder="Nombre del contacto"
                     onChange={e => setUsuario({...usuario, nombre:e.target.value})}
                     value={usuario.nombre}
-                    className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-500 text-black"
+                    className="bg-zinc-800 border border-zinc-600 text-white placeholder-zinc-400 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-500"
                   />
                 </div>
 
@@ -110,7 +145,7 @@ function App() {
                     placeholder="Edad del contacto"
                     value={usuario.edad}
                     onChange={e => setUsuario({...usuario, edad: e.target.value})}
-                    className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-500 text-black"
+                    className="bg-zinc-800 border border-zinc-600 text-white placeholder-zinc-400 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-500"
                   />
                 </div>
 
@@ -121,7 +156,7 @@ function App() {
                     placeholder="Correo electrónico"
                     value={usuario.correo}
                     onChange={e=> setUsuario ({...usuario, correo: e.target.value})}
-                    className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-500 text-black"
+                    className="bg-zinc-800 border border-zinc-600 text-white placeholder-zinc-400 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-500"
                   />
                 </div>
 
@@ -132,13 +167,13 @@ function App() {
                     placeholder="Cédula"
                     value={usuario.cedula}
                     onChange={e => setUsuario ({...usuario, cedula: e.target.value})}
-                    className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-500 text-black"
+                    className="bg-zinc-800 border border-zinc-600 text-white placeholder-zinc-400 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-500"
                   />
                 </div>
               </div>
               <button
                 onClick={agregarUsuario}
-                className='mt-5 bg-green-600 p-2 cursor-pointer rounded-2xl w-full font-bold'
+                className='mt-5 bg-green-600 p-2 cursor-pointer rounded-2xl w-full font-bold transition-colors hover:bg-green-500'
               >
                 {indiceEditar !== null ? 'Guardar cambios' : 'Agregar contacto'}
               </button>
